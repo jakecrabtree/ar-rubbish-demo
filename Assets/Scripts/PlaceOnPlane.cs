@@ -31,9 +31,17 @@ public class PlaceOnPlane : MonoBehaviour
     /// </summary>
     public GameObject spawnedObject { get; private set; }
 
+    private enum Mode {PlaceCan, ThrowTrash}
+    private Mode currMode;
+
+    public GameObject banana;
+    public GameObject button;// { get; private set; }
+
     void Awake()
     {
         m_SessionOrigin = GetComponent<ARSessionOrigin>();
+        currMode = Mode.PlaceCan;
+        button.SetActive(false);
     }
 
     void Update()
@@ -41,23 +49,35 @@ public class PlaceOnPlane : MonoBehaviour
         if (Input.touchCount == 0)
             return;
 
-        var touch = Input.GetTouch(0);
+        Touch touch = Input.GetTouch(0);
 
-        if (m_SessionOrigin.Raycast(touch.position, s_Hits, TrackableType.PlaneWithinPolygon))
-        {
-            // Raycast hits are sorted by distance, so the first one
-            // will be the closest hit.
-            var hitPose = s_Hits[0].pose;
+        if (currMode == Mode.PlaceCan){
+            if (m_SessionOrigin.Raycast(touch.position, s_Hits, TrackableType.PlaneWithinPolygon))
+            {
+                // Raycast hits are sorted by distance, so the first one
+                // will be the closest hit.
+                Pose hitPose = s_Hits[0].pose;
 
-            if (spawnedObject == null)
-            {
-                spawnedObject = Instantiate(m_PlacedPrefab, hitPose.position, hitPose.rotation);
-            }
-            else
-            {
-                spawnedObject.transform.position = hitPose.position;
+                if (spawnedObject == null)
+
+                {
+                    button.SetActive(true);
+                    spawnedObject = Instantiate(m_PlacedPrefab, hitPose.position, hitPose.rotation);
+                    spawnedObject.transform.position += new Vector3(0, spawnedObject.GetComponent<MeshCollider>().bounds.extents.y,0);
+                }
+                else
+                {
+                    spawnedObject.transform.position = hitPose.position;
+                    spawnedObject.transform.position += new Vector3(0, spawnedObject.GetComponent<MeshCollider>().bounds.extents.y,0);
+                }
             }
         }
+    }
+
+    public void SwitchMode(){
+        currMode = Mode.ThrowTrash;
+        button.SetActive(false);
+        Instantiate(banana);
     }
 
     static List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
